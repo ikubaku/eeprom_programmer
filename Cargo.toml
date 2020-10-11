@@ -1,0 +1,18 @@
+[package]
+name = "eeprom_programmer"
+version = "0.1.0"
+authors = ["Hideyuki Teramura <hide4d51@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+stm32g0xx-hal = { version = "0.0.9", features = [ "rt", "stm32g031" ] }
+cortex-m-rt = "0.6"
+panic-halt = "0.2"
+nb = "0.1.1"
+eeprom_programmer_command = { git = "https://github.com/ikubaku/eeprom_programmer_command.git", branch = "master", default-features = false, features = [ "display", "serial" ], version = "0.2.5" }
+
+[dependencies.stm32g0]
+version = "0.12.0"
+features = ["stm32g031", "rt"]
