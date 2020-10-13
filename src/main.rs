@@ -11,15 +11,21 @@ use stm32g0xx_hal as hal;
 use hal::stm32;
 use rt::entry;
 
-use core::fmt::Write;
+use core::fmt::Write as Core_Write;
 
 use hal::rcc::RccExt;
 use hal::gpio::GpioExt;
 use hal::serial::SerialExt;
 use hal::serial::FullConfig;
+use hal::hal::serial::Write;
+use hal::hal::serial::Read;
 use stm32g0xx_hal::time::U32Ext;
 
-use eeprom_programmer_command::parser::Command;
+use nb::block;
+
+use eeprom_programmer_command::parser::{Command, Parser};
+use arrayvec::ArrayVec;
+use eeprom_programmer_command::reader::BufferReader;
 
 #[entry]
 fn main() -> ! {
@@ -43,29 +49,45 @@ fn main() -> ! {
     let uart_config = FullConfig::default();
     let uart_config = uart_config.baudrate(9600.bps());
     let uart = dp.USART1.usart(txd, rxd, uart_config, &mut rcc).unwrap();
-    let (mut tx, rx) = uart.split();
+    let (mut tx, mut rx) = uart.split();
 
-    // Create the Command Parser
-    let reader = eeprom_programmer_command::reader::SerialReader::new(rx);
-    let mut parser = eeprom_programmer_command::parser::Parser::new(reader);
+    // Create a readline buffer
+    let mut read_buf = ArrayVec::<[u8; 32]>::new();
 
     // Interactive interface
     writeln!(tx, "ikeeprom EEPROM Reader & Writer v0.1.0\r").unwrap();
 
     loop {
         write!(tx, "> ").unwrap();
+        read_buf.clear();
         loop {
-            match parser.parse_command() {
-                Ok(cmd) => {
-                    match cmd {
-                        Command::ReadByte(_) => writeln!(tx, "ReadByte\r").unwrap(),
-                        Command::WriteByte(_, _) => writeln!(tx, "WriteByte\r").unwrap(),
-                        Command::ReadData(_, _) => writeln!(tx, "ReadData\r").unwrap(),
-                        Command::WritePage(_) => writeln!(tx, "WritePage\r").unwrap(),
-                        Command::SetDevice(_) => writeln!(tx, "SetDevice\r").unwrap(),
-                    }
-                },
-                Err(_) => writeln!(tx, "An error occured!\r").unwrap(),
+            let c = block!(rx.read()).unwrap_or(b' ');
+            if c == 0x08 {
+                if read_buf.pop().is_some() {
+                    block!(tx.write(c)).unwrap();
+                }
+            } else if (0x20 <= c && c <= 0x7E) || c == b'\r' || c == b'\n' {
+                if read_buf.try_push(c).is_ok() {
+                    block!(tx.write(c)).unwrap();
+                }
+            }
+            if c == b'\n' {
+                let reader = BufferReader::try_new(read_buf.as_slice()).unwrap();
+                let mut parser = Parser::new(reader);
+                match parser.parse_command() {
+                    Ok(cmd) => {
+                        match cmd {
+                            Command::ReadByte(_) => writeln!(tx, "ReadByte\r").unwrap(),
+                            Command::WriteByte(_, _) => writeln!(tx, "WriteByte\r").unwrap(),
+                            Command::ReadData(_, _) => writeln!(tx, "ReadData\r").unwrap(),
+                            Command::WritePage(_) => writeln!(tx, "WritePage\r").unwrap(),
+                            Command::SetDevice(_) => writeln!(tx, "SetDevice\r").unwrap(),
+                        }
+                    },
+                    Err(_) => writeln!(tx, "An error occured!\r").unwrap(),
+                }
+
+                break;
             }
         }
     }
