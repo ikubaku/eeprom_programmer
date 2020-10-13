@@ -1,4 +1,4 @@
-#![deny(warnings)]
+//#![deny(warnings)]
 #![no_main]
 #![no_std]
 
@@ -13,14 +13,20 @@ use arrayvec::ArrayVec;
 
 use nb::block;
 
+use hal::delay::DelayExt;
 use hal::gpio::GpioExt;
+use hal::hal::digital::v2::OutputPin;
 use hal::hal::serial::Read;
 use hal::hal::serial::Write;
+use hal::i2c;
+use hal::i2c::I2cExt;
 use hal::rcc::RccExt;
 use hal::serial::FullConfig;
 use hal::serial::SerialExt;
 use hal::stm32;
 use hal::time::U32Ext;
+
+use eeprom24x::{Eeprom24x, SlaveAddr};
 
 use eeprom_programmer_command::parser::{Command, Parser};
 use eeprom_programmer_command::reader::BufferReader;
@@ -42,6 +48,9 @@ fn main() -> ! {
             .write(|w| w.bits(cfgr1 | 0b0000_0000_0000_0000_0000_0000_0001_1000));
     }
 
+    // Configure a timer for delay
+    let mut delay = dp.TIM1.delay(&mut rcc);
+
     // Configure GPIO A
     let gpioa = dp.GPIOA.split(&mut rcc);
     let txd = gpioa.pa9;
@@ -57,6 +66,24 @@ fn main() -> ! {
 
     // Interactive interface
     writeln!(tx, "ikeeprom EEPROM Reader & Writer v0.1.0\r").unwrap();
+
+    // Wait for firmware download via SWD for 2 seconds
+    delay.delay(2000.ms());
+
+    // Initialize the I2C bus
+    let mut pulldown = gpioa.pa13.into_open_drain_output();
+    pulldown.set_low().unwrap();
+    let gpiob = dp.GPIOB.split(&mut rcc);
+    let sda = gpiob.pb7.into_open_drain_output();
+    let scl = gpiob.pb6.into_open_drain_output();
+    let mut i2c = dp
+        .I2C1
+        .i2c(sda, scl, i2c::Config::new(100_000.hz()), &mut rcc);
+
+    // Create EEPROM device
+    let eeprom_addr = SlaveAddr::Default;
+    // 24x64 as a default device
+    let mut eeprom = Eeprom24x::new_24x64(i2c, eeprom_addr);
 
     loop {
         write!(tx, "> ").unwrap();
@@ -77,8 +104,14 @@ fn main() -> ! {
                 let mut parser = Parser::new(reader);
                 match parser.parse_command() {
                     Ok(cmd) => match cmd {
-                        Command::ReadByte(_) => writeln!(tx, "ReadByte\r").unwrap(),
-                        Command::WriteByte(_, _) => writeln!(tx, "WriteByte\r").unwrap(),
+                        Command::ReadByte(addr) => match eeprom.read_byte(addr) {
+                            Ok(b) => writeln!(tx, "data = {}\r", b).unwrap(),
+                            Err(_) => writeln!(tx, "Could not read data!\r").unwrap(),
+                        },
+                        Command::WriteByte(addr, data) => match eeprom.write_byte(addr, data) {
+                            Ok(_) => writeln!(tx, "Ok\r").unwrap(),
+                            Err(_) => writeln!(tx, "Could not write data!\r").unwrap(),
+                        },
                         Command::ReadData(_, _) => writeln!(tx, "ReadData\r").unwrap(),
                         Command::WritePage(_) => writeln!(tx, "WritePage\r").unwrap(),
                         Command::SetDevice(_) => writeln!(tx, "SetDevice\r").unwrap(),
