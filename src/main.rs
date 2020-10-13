@@ -7,7 +7,6 @@ use cortex_m_rt as rt;
 use panic_halt as _;
 use stm32g0xx_hal as hal;
 
-//use hal::prelude::*;
 use hal::stm32;
 use rt::entry;
 
