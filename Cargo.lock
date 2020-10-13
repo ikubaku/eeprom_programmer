@@ -95,8 +95,8 @@ dependencies = [
 
 [[package]]
 name = "eeprom_programmer_command"
-version = "0.2.10"
-source = "git+https://github.com/ikubaku/eeprom_programmer_command.git?branch=master#87af6b3a4adcf073788f8f074967a0ea9386dd8e"
+version = "0.2.11"
+source = "git+https://github.com/ikubaku/eeprom_programmer_command.git#4e58c27dc270d12e8bc2f89a54bccae7f1907a9d"
 dependencies = [
  "arrayvec",
 ]
