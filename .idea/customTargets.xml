@@ -11,5 +11,15 @@
         </clean>
       </configuration>
     </target>
+    <target id="8915e9f7-17e0-4856-b81d-0f47d2ab5eb5" name="Cargo(arm-none-eabi) (Release)" defaultType="TOOL">
+      <configuration id="a98134cf-2fb6-4612-9bda-a7ba03d4635d" name="Cargo(arm-none-eabi) (Release)" toolchainName="arm-none-eabi">
+        <build type="TOOL">
+          <tool actionId="Tool_External Tools_cargo-build (Release)" />
+        </build>
+        <clean type="TOOL">
+          <tool actionId="Tool_External Tools_cargo-clean" />
+        </clean>
+      </configuration>
+    </target>
   </component>
 </project>
