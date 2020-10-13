@@ -13,18 +13,18 @@ use rt::entry;
 
 use core::fmt::Write as Core_Write;
 
-use hal::rcc::RccExt;
 use hal::gpio::GpioExt;
-use hal::serial::SerialExt;
-use hal::serial::FullConfig;
-use hal::hal::serial::Write;
 use hal::hal::serial::Read;
+use hal::hal::serial::Write;
+use hal::rcc::RccExt;
+use hal::serial::FullConfig;
+use hal::serial::SerialExt;
 use stm32g0xx_hal::time::U32Ext;
 
 use nb::block;
 
-use eeprom_programmer_command::parser::{Command, Parser};
 use arrayvec::ArrayVec;
+use eeprom_programmer_command::parser::{Command, Parser};
 use eeprom_programmer_command::reader::BufferReader;
 
 #[entry]
@@ -38,7 +38,11 @@ fn main() -> ! {
 
     // Pin remappings for the UART functionality
     let cfgr1 = dp.SYSCFG.cfgr1.read().bits();
-    unsafe { dp.SYSCFG.cfgr1.write(|w| w.bits(cfgr1 | 0b0000_0000_0000_0000_0000_0000_0001_1000)); }
+    unsafe {
+        dp.SYSCFG
+            .cfgr1
+            .write(|w| w.bits(cfgr1 | 0b0000_0000_0000_0000_0000_0000_0001_1000));
+    }
 
     // Configure GPIO A
     let gpioa = dp.GPIOA.split(&mut rcc);
@@ -75,14 +79,12 @@ fn main() -> ! {
                 let reader = BufferReader::try_new(read_buf.as_slice()).unwrap();
                 let mut parser = Parser::new(reader);
                 match parser.parse_command() {
-                    Ok(cmd) => {
-                        match cmd {
-                            Command::ReadByte(_) => writeln!(tx, "ReadByte\r").unwrap(),
-                            Command::WriteByte(_, _) => writeln!(tx, "WriteByte\r").unwrap(),
-                            Command::ReadData(_, _) => writeln!(tx, "ReadData\r").unwrap(),
-                            Command::WritePage(_) => writeln!(tx, "WritePage\r").unwrap(),
-                            Command::SetDevice(_) => writeln!(tx, "SetDevice\r").unwrap(),
-                        }
+                    Ok(cmd) => match cmd {
+                        Command::ReadByte(_) => writeln!(tx, "ReadByte\r").unwrap(),
+                        Command::WriteByte(_, _) => writeln!(tx, "WriteByte\r").unwrap(),
+                        Command::ReadData(_, _) => writeln!(tx, "ReadData\r").unwrap(),
+                        Command::WritePage(_) => writeln!(tx, "WritePage\r").unwrap(),
+                        Command::SetDevice(_) => writeln!(tx, "SetDevice\r").unwrap(),
                     },
                     Err(_) => writeln!(tx, "An error occured!\r").unwrap(),
                 }
