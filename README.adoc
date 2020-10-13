@@ -1,5 +1,7 @@
 = eeprom_programmer
 
+image:https://github.com/iikubaku/eeprom_programmer/workflows/rustfmt/badge.svg[]
+
 An EEPROM reader &amp; writer with both the interactive shell and the computer communication interface
 
 ! Under heavy development !
