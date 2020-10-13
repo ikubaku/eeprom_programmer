@@ -3,14 +3,16 @@
 #![no_main]
 #![no_std]
 
+use core::fmt::Write as Core_Write;
+
 use cortex_m_rt as rt;
 use panic_halt as _;
+use rt::entry;
 use stm32g0xx_hal as hal;
 
-use hal::stm32;
-use rt::entry;
+use arrayvec::ArrayVec;
 
-use core::fmt::Write as Core_Write;
+use nb::block;
 
 use hal::gpio::GpioExt;
 use hal::hal::serial::Read;
@@ -18,11 +20,9 @@ use hal::hal::serial::Write;
 use hal::rcc::RccExt;
 use hal::serial::FullConfig;
 use hal::serial::SerialExt;
-use stm32g0xx_hal::time::U32Ext;
+use hal::stm32;
+use hal::time::U32Ext;
 
-use nb::block;
-
-use arrayvec::ArrayVec;
 use eeprom_programmer_command::parser::{Command, Parser};
 use eeprom_programmer_command::reader::BufferReader;
 
@@ -49,8 +49,7 @@ fn main() -> ! {
     let rxd = gpioa.pa10;
 
     // Enable UART
-    let uart_config = FullConfig::default();
-    let uart_config = uart_config.baudrate(9600.bps());
+    let uart_config = FullConfig::default().baudrate(9600.bps());
     let uart = dp.USART1.usart(txd, rxd, uart_config, &mut rcc).unwrap();
     let (mut tx, mut rx) = uart.split();
 
