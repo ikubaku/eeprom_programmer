@@ -81,11 +81,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "eeprom24x"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f680e8d81a559a97de04c5fab25f17f22a55770120c868ef8fbdea6398d44107"
+dependencies = [
+ "embedded-hal",
+]
+
+[[package]]
 name = "eeprom_programmer"
 version = "0.1.0"
 dependencies = [
  "arrayvec",
  "cortex-m-rt",
+ "eeprom24x",
  "eeprom_programmer_command",
  "nb 0.1.3",
  "panic-halt",
