@@ -1,0 +1,38 @@
+= eeprom_programmer
+
+An EEPROM reader &amp; writer with both the interactive shell and the computer communication interface
+
+! Under heavy development !
+
+== Features
+* [ ] The interactive command shell over UART
+* [ ] Program / dump 24xnn-compatible EEPROMS
+* [ ] Random write / read
+* [ ] Copy data in an EEPROM to another one
+* [ ] The batch mode interface for interactions using other CLI / GUI tools
+
+== Prerequisites
+=== Hardware
+* A STM32G0xx series MCU
+* Other nice parts
+
+=== Software
+* Rust(stable)
+* Any serial terminal software you like
+
+== Hardware Specifications
+TBA
+
+== Assembly
+TBA
+
+== Firmware Update
+TBA
+
+The UART DFU is planned to be supported(you don't need SWD debugger to update the firmware).
+
+== Usage
+TBA
+
+== License
+See link:LICENSE[]
