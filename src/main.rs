@@ -9,15 +9,10 @@ use panic_halt as _;
 use rt::entry;
 use stm32g0xx_hal as hal;
 
-use arrayvec::ArrayVec;
-
-use nb::block;
 
 use hal::delay::DelayExt;
 use hal::gpio::GpioExt;
 use hal::hal::digital::v2::OutputPin;
-use hal::hal::serial::Read;
-use hal::hal::serial::Write;
 use hal::i2c;
 use hal::i2c::I2cExt;
 use hal::rcc::RccExt;
@@ -26,10 +21,7 @@ use hal::serial::SerialExt;
 use hal::stm32;
 use hal::time::U32Ext;
 
-use eeprom24x::{Eeprom24x, SlaveAddr};
-
-use eeprom_programmer_command::parser::{Command, Parser};
-use eeprom_programmer_command::reader::BufferReader;
+mod app;
 
 #[entry]
 fn main() -> ! {
@@ -59,10 +51,9 @@ fn main() -> ! {
     // Enable UART
     let uart_config = FullConfig::default().baudrate(9600.bps());
     let uart = dp.USART1.usart(txd, rxd, uart_config, &mut rcc).unwrap();
-    let (mut tx, mut rx) = uart.split();
+    let (tx, rx) = uart.split();
 
-    // Create a readline buffer
-    let mut read_buf = ArrayVec::<[u8; 32]>::new();
+    let mut tx = tx;
 
     // Interactive interface
     writeln!(tx, "ikeeprom EEPROM Reader & Writer v0.1.0\r").unwrap();
@@ -76,51 +67,9 @@ fn main() -> ! {
     let gpiob = dp.GPIOB.split(&mut rcc);
     let sda = gpiob.pb7.into_open_drain_output();
     let scl = gpiob.pb6.into_open_drain_output();
-    let mut i2c = dp
+    let i2c = dp
         .I2C1
         .i2c(sda, scl, i2c::Config::new(100_000.hz()), &mut rcc);
 
-    // Create EEPROM device
-    let eeprom_addr = SlaveAddr::Default;
-    // 24x64 as a default device
-    let mut eeprom = Eeprom24x::new_24x64(i2c, eeprom_addr);
-
-    loop {
-        write!(tx, "> ").unwrap();
-        read_buf.clear();
-        loop {
-            let c = block!(rx.read()).unwrap_or(b' ');
-            if c == 0x08 {
-                if read_buf.pop().is_some() {
-                    block!(tx.write(c)).unwrap();
-                }
-            } else if (0x20 <= c && c <= 0x7E) || c == b'\r' || c == b'\n' {
-                if read_buf.try_push(c).is_ok() {
-                    block!(tx.write(c)).unwrap();
-                }
-            }
-            if c == b'\n' {
-                let reader = BufferReader::try_new(read_buf.as_slice()).unwrap();
-                let mut parser = Parser::new(reader);
-                match parser.parse_command() {
-                    Ok(cmd) => match cmd {
-                        Command::ReadByte(addr) => match eeprom.read_byte(addr) {
-                            Ok(b) => writeln!(tx, "data = {}\r", b).unwrap(),
-                            Err(_) => writeln!(tx, "Could not read data!\r").unwrap(),
-                        },
-                        Command::WriteByte(addr, data) => match eeprom.write_byte(addr, data) {
-                            Ok(_) => writeln!(tx, "Ok\r").unwrap(),
-                            Err(_) => writeln!(tx, "Could not write data!\r").unwrap(),
-                        },
-                        Command::ReadData(_, _) => writeln!(tx, "ReadData\r").unwrap(),
-                        Command::WritePage(_) => writeln!(tx, "WritePage\r").unwrap(),
-                        Command::SetDevice(_) => writeln!(tx, "SetDevice\r").unwrap(),
-                    },
-                    Err(_) => writeln!(tx, "An error occured!\r").unwrap(),
-                }
-
-                break;
-            }
-        }
-    }
+    app::main(tx, rx, i2c, delay);
 }
