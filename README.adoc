@@ -7,12 +7,12 @@ An EEPROM reader &amp; writer with both the interactive shell and the computer c
 ! Under heavy development !
 
 == Features
-The programmer is compatible with 24xnn-series EEPROMS with these functions.
+The programmer is compatible with 24xnn-series EEPROMs with these functions.
 
 * [x] The interactive command shell over UART
 * [x] Random byte write / read
 * [ ] Page write
-* [ ] Sequential Read
+* [ ] Sequential read
 * [ ] Copy data in an EEPROM to another one
 * [ ] The batch mode interface for interactions using other CLI / GUI tools
 * [x] Device firmware update over UART(needs a MCU with the DFU functionality)
