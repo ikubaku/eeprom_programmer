@@ -1,6 +1,6 @@
-use embedded_hal::serial;
-use embedded_hal::blocking::i2c;
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
+use embedded_hal::blocking::i2c;
+use embedded_hal::serial;
 
 use nb::block;
 
@@ -11,13 +11,20 @@ use eeprom24x::{Eeprom24x, SlaveAddr};
 use eeprom_programmer_command::parser::{Command, Parser};
 use eeprom_programmer_command::reader::BufferReader;
 
-pub fn main<TXD, RXD, I2C, DELAY, E>(mut uart_txd: TXD, mut uart_rxd: RXD, i2c: I2C, delay: DELAY) -> !
-where TXD: serial::Write<u8> + core::fmt::Write,
-<TXD>::Error: core::fmt::Debug,
-RXD: serial::Read<u8>,
-<RXD>::Error: core::fmt::Debug,
-I2C: i2c::Write<Error = E> + i2c::Read<Error = E> + i2c::WriteRead<Error = E>,
-DELAY: DelayMs<u32> + DelayUs<u32> {
+pub fn main<TXD, RXD, I2C, DELAY, E>(
+    mut uart_txd: TXD,
+    mut uart_rxd: RXD,
+    i2c: I2C,
+    delay: DELAY,
+) -> !
+where
+    TXD: serial::Write<u8> + core::fmt::Write,
+    <TXD>::Error: core::fmt::Debug,
+    RXD: serial::Read<u8>,
+    <RXD>::Error: core::fmt::Debug,
+    I2C: i2c::Write<Error = E> + i2c::Read<Error = E> + i2c::WriteRead<Error = E>,
+    DELAY: DelayMs<u32> + DelayUs<u32>,
+{
     // Create a readline buffer
     let mut read_buf = ArrayVec::<[u8; 32]>::new();
 

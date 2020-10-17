@@ -9,7 +9,6 @@ use panic_halt as _;
 use rt::entry;
 use stm32g0xx_hal as hal;
 
-
 use hal::delay::DelayExt;
 use hal::gpio::GpioExt;
 use hal::hal::digital::v2::OutputPin;
