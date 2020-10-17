@@ -97,6 +97,7 @@ dependencies = [
  "cortex-m-rt",
  "eeprom24x",
  "eeprom_programmer_command",
+ "embedded-hal",
  "nb 0.1.3",
  "panic-halt",
  "stm32g0",
